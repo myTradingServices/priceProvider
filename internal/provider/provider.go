@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/segmentio/kafka-go"
 	log "github.com/sirupsen/logrus"
@@ -53,6 +54,7 @@ func (provide *provider) Write(ctx context.Context) {
 				return
 			}
 		}
+		time.Sleep(time.Second)
 	}
 }
 

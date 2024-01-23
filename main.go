@@ -4,19 +4,19 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/mmfshirokan/GoProject2/internal/config"
-	"github.com/mmfshirokan/GoProject2/internal/provider"
+	"github.com/mmfshirokan/PriceProvider/internal/config"
+	"github.com/mmfshirokan/PriceProvider/internal/provider"
 )
 
 func main() {
-	conf := config.NewConfig()
+	conf := config.New()
 	symbols := NewSymbols()
-	context := context.Background()
+	ctx := context.Background()
 	forever := make(chan struct{})
 
-	provider := provider.New(symbols, conf.KafkaURL, conf.KafkaTopic)
+	provide := provider.New(symbols, conf.KafkaURL, conf.KafkaTopic)
 
-	go provider.Write(context)
+	go provide.Write(ctx)
 
 	<-forever
 }

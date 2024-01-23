@@ -10,7 +10,7 @@ type data struct {
 	KafkaTopic string `env:"KAFKA_TOPIC" envDefault:"prices"`
 }
 
-func NewConfig() data {
+func New() data {
 	conf := data{}
 	if err := env.Parse(&conf); err != nil {
 		log.Errorf("Parse config error: %v\n", err)
