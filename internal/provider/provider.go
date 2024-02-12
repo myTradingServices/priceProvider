@@ -55,7 +55,9 @@ func (provide *provider) Write(ctx context.Context, symbol string) {
 		})
 		if err != nil {
 			log.Error("Error at writing message: ", err)
-			return
+			//return
+		} else {
+			log.Info("Message writed sucssesful") // TODO: remove ttis is only for testing
 		}
 
 		tmpPrice = ProvidePrice(tmpPrice)

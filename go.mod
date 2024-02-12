@@ -9,6 +9,8 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 )
 
+require github.com/go-zookeeper/zk v1.0.3 // indirect
+
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
