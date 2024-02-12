@@ -2,34 +2,33 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"math/rand"
-	"sort"
-	"strconv"
 	"time"
 
+	"github.com/mmfshirokan/PriceProvider/internal/model"
 	"github.com/segmentio/kafka-go"
+	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
 )
 
 type provider struct {
-	symbols   []string
 	brokerURL string
 	topic     string
 }
 
 type Writer interface {
-	Write(ctx context.Context)
+	Write(ctx context.Context, symbol string)
 }
 
-func New(symbols []string, brokerURL string, topic string) Writer {
+func New(brokerURL, topic string) Writer {
 	return &provider{
-		symbols:   symbols,
 		brokerURL: brokerURL,
 		topic:     topic,
 	}
 }
 
-func (provide *provider) Write(ctx context.Context) {
+func (provide *provider) Write(ctx context.Context, symbol string) {
 	wrt := kafka.NewWriter(kafka.WriterConfig{
 		Brokers:  []string{provide.brokerURL},
 		Topic:    provide.topic,
@@ -37,56 +36,37 @@ func (provide *provider) Write(ctx context.Context) {
 		Balancer: &kafka.RoundRobin{},
 	})
 
-	ch := make(chan []int)
-	go providePrices(ch)
-
+	tmpPrice := ProvidePrice(decimal.NewFromInt(rand.Int63n(100)))
 	for {
-		for _, symbol := range provide.symbols {
-			candle := <-ch
-			val := strconv.FormatInt(int64(candle[0]), 10) + ";" + strconv.FormatInt(int64(candle[1]), 10) + ";" + strconv.FormatInt(int64(candle[2]), 10) + ";" + strconv.FormatInt(int64(candle[3]), 10)
-
-			err := wrt.WriteMessages(ctx, kafka.Message{
-				Key:   []byte(symbol),
-				Value: []byte(val),
-			})
-			if err != nil {
-				log.Errorf("Error writing message: %v.\n", err)
-				return
-			}
+		jsonMarsheld, err := json.Marshal(model.Price{
+			Date:   time.Now(),
+			Bid:    tmpPrice,
+			Ask:    tmpPrice.Add(decimal.New(rand.Int63n(101)-49, -2)),
+			Symbol: symbol,
+		})
+		if err != nil {
+			log.Error(err)
+			return
 		}
+
+		err = wrt.WriteMessages(ctx, kafka.Message{
+			Key:   []byte(symbol),
+			Value: jsonMarsheld,
+		})
+		if err != nil {
+			log.Error("Error at writing message: ", err)
+			return
+		}
+
+		tmpPrice = ProvidePrice(tmpPrice)
+		if tmpPrice.LessThanOrEqual(decimal.New(0, 0)) {
+			tmpPrice.Add(ProvidePrice(decimal.New(5, 0)))
+		}
+
 		time.Sleep(time.Second)
 	}
 }
 
-func providePrices(ch chan []int) {
-	const spread int = 11
-	var shift int = 0
-
-	for {
-		shift += provideShift()
-		ch <- provideCandle(spread, shift)
-	}
-}
-
-func provideCandle(spread int, shift int) []int {
-	candle := make([]int, 4)
-	for i := range candle {
-		candle[i] = rand.Intn(spread) + shift
-	}
-
-	sort.Slice(candle, func(i, j int) bool {
-		return candle[i] < candle[j]
-	})
-
-	return candle
-}
-
-func provideShift() (shift int) {
-	shift = rand.Intn(2)
-	if shift == 0 {
-		shift = -1
-		return
-	}
-
-	return
+func ProvidePrice(prevPrice decimal.Decimal) decimal.Decimal {
+	return decimal.Sum(prevPrice, decimal.New(int64(rand.Intn(501))-250, -2))
 }

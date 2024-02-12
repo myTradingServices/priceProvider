@@ -8,21 +8,27 @@ import (
 	"github.com/mmfshirokan/PriceProvider/internal/provider"
 )
 
+const (
+	numberOfSymbols = 20
+)
+
 func main() {
 	conf := config.New()
-	symbols := NewSymbols()
+	symbols := NewSymbols(numberOfSymbols)
 	ctx := context.Background()
 	forever := make(chan struct{})
 
-	provide := provider.New(symbols, conf.KafkaURL, conf.KafkaTopic)
+	provide := provider.New(conf.KafkaURL, conf.KafkaTopic)
 
-	go provide.Write(ctx)
+	for _, val := range symbols {
+		go provide.Write(ctx, val)
+	}
 
 	<-forever
 }
 
-func NewSymbols() []string {
-	symbols := make([]string, 100)
+func NewSymbols(numberOfSymbols int) []string {
+	symbols := make([]string, numberOfSymbols)
 	for i := range symbols {
 		symbols[i] = "symbol" + strconv.FormatInt(int64(i), 10)
 	}
