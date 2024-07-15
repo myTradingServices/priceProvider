@@ -29,6 +29,8 @@ func New(brokerURL, topic string) Writer {
 }
 
 func (provide *provider) Write(ctx context.Context, symbol string) {
+	log.Info("Provider Write started")
+
 	wrt := kafka.NewWriter(kafka.WriterConfig{
 		Brokers:  []string{provide.brokerURL},
 		Topic:    provide.topic,
@@ -38,12 +40,14 @@ func (provide *provider) Write(ctx context.Context, symbol string) {
 
 	tmpPrice := ProvidePrice(decimal.NewFromInt(rand.Int63n(100)))
 	for {
-		jsonMarsheld, err := json.Marshal(model.Price{
+		modelToSent := model.Price{
 			Date:   time.Now(),
 			Bid:    tmpPrice,
 			Ask:    tmpPrice.Add(decimal.New(rand.Int63n(101)-49, -2)),
 			Symbol: symbol,
-		})
+		}
+
+		jsonMarsheld, err := json.Marshal(modelToSent)
 		if err != nil {
 			log.Error(err)
 			return
@@ -57,7 +61,12 @@ func (provide *provider) Write(ctx context.Context, symbol string) {
 			log.Error("Error at writing message: ", err)
 			//return
 		} else {
-			log.Info("Message writed sucssesful") // TODO: remove ttis is only for testing
+			log.WithFields(log.Fields{
+				"symbol": modelToSent.Symbol,
+				"bid":    modelToSent.Bid,
+				"ask":    modelToSent.Ask,
+				"date":   modelToSent.Date,
+			}).Info("Message sent")
 		}
 
 		tmpPrice = ProvidePrice(tmpPrice)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/mmfshirokan/PriceProvider/internal/config"
 	"github.com/mmfshirokan/PriceProvider/internal/provider"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -13,6 +14,8 @@ const (
 )
 
 func main() {
+	log.Info("Starting price provider")
+
 	conf := config.New()
 	symbols := NewSymbols(numberOfSymbols)
 	ctx := context.Background()
@@ -24,6 +27,7 @@ func main() {
 		go provide.Write(ctx, val)
 	}
 
+	log.Info("Price provider working...")
 	<-forever
 }
 
